@@ -7,7 +7,7 @@ import torch
 
 from einops import rearrange
 from skimage.feature import hog
-from mask_generator import CubeMaskGenerator
+from video_transformer.mask_generator import CubeMaskGenerator
 
 class_labels_map = None
 cls_sample_cnt = None

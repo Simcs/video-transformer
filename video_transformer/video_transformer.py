@@ -5,9 +5,9 @@ import torch.nn.functional as F
 import torch.distributed as dist
 import numpy as np
 
-import utils
-from transformer import PatchEmbed, TransformerContainer, get_sine_cosine_pos_emb
-from weight_init import (trunc_normal_, init_from_vit_pretrain_, 
+import video_transformer.utils
+from video_transformer.transformer import PatchEmbed, TransformerContainer, get_sine_cosine_pos_emb
+from video_transformer.weight_init import (trunc_normal_, init_from_vit_pretrain_, 
 	init_from_mae_pretrain_, init_from_kinetics_pretrain_)
 
 import math
