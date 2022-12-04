@@ -543,6 +543,32 @@ def transforms_train(img_size=224,
 		return Compose(primary_tfl + secondary_tfl + final_tfl)
 
 
+def transforms_eval_without_normalize(
+    img_size=224,
+	crop_pct=None,
+	interpolation='bilinear',
+	mean=IMAGENET_DEFAULT_MEAN,
+	std=IMAGENET_DEFAULT_STD
+ ):
+	crop_pct = crop_pct or DEFAULT_CROP_PCT
+
+	if isinstance(img_size, (tuple, list)):
+		assert len(img_size) == 2
+		if img_size[-1] == img_size[-2]:
+			# fall-back to older behaviour so Resize scales to shortest edge if target is square
+			scale_size = int(math.floor(img_size[0] / crop_pct))
+		else:
+			scale_size = tuple([int(x / crop_pct) for x in img_size])
+	else:
+		scale_size = int(math.floor(img_size / crop_pct))
+
+	tfl = [
+		transforms.Resize(scale_size, interpolation=str_to_interp_mode(interpolation)),
+		transforms.CenterCrop(img_size),
+	]
+
+	return Compose(tfl)
+
 def transforms_eval(img_size=224,
 					crop_pct=None,
 					interpolation='bilinear',

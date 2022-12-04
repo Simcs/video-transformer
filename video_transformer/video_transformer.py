@@ -421,6 +421,7 @@ class ViViT(nn.Module):
 			self.time_embed = get_sine_cosine_pos_emb(num_frames,embed_dims)
 		self.drop_after_pos = nn.Dropout(p=dropout_p)
 		self.drop_after_time = nn.Dropout(p=dropout_p)
+		self.drop_before_time = nn.Dropout(p=0.0)
 
 		self.init_weights()
 
@@ -456,6 +457,7 @@ class ViViT(nn.Module):
 		#Tokenize
 		b = x.shape[0]
 		x = self.patch_embed(x)
+		# print('after patch embed:', x.shape)
 		
 		# Add Position Embedding
 		cls_tokens = repeat(self.cls_token, 'b ... -> (repeat b) ...', repeat=x.shape[0])
@@ -502,7 +504,9 @@ class ViViT(nn.Module):
 		return x, cls_tokens, b
 
 	def forward(self, x):
+		# print('initial x:', x.shape)
 		x, cls_tokens, b = self.prepare_tokens(x)
+		# print('x after token', x.shape)
 		
 		if self.attention_type != 'fact_encoder':
 			x = self.transformer_layers(x)
@@ -510,12 +514,18 @@ class ViViT(nn.Module):
 			# fact encoder - CRNN style
 			spatial_transformer, temporal_transformer, = *self.transformer_layers,
 			x = spatial_transformer(x)
+			# print('spatial output:', x.shape)
 			
 			# Add Time Embedding
 			cls_tokens = x[:b, 0, :].unsqueeze(1)
+			# print('temporal cls toekns:', cls_tokens.shape)
 			x = rearrange(x[:, 1:, :], '(b t) p d -> b t p d', b=b)
+			# print('temporal input:', x.shape)
 			x = reduce(x, 'b t p d -> b t d', 'mean')
+			x = self.drop_before_time(x)
+			# print('temporal input:', x.shape)
 			x = torch.cat((cls_tokens, x), dim=1)
+			# print('temporal input:', x.shape)
 			if self.use_learnable_pos_emb:
 				x = x + self.time_embed
 			else:
@@ -523,6 +533,7 @@ class ViViT(nn.Module):
 			x = self.drop_after_time(x)
 			
 			x = temporal_transformer(x)
+			# print('temporal output:', x.shape)
 
 		x = self.norm(x)
 		# Return Class Token
@@ -551,7 +562,6 @@ class ViViT(nn.Module):
 			else:
 				x = x + self.time_embed.type_as(x).detach()
 			x = self.drop_after_time(x)
-			print(x.shape)
 			x = temporal_transformer(x, return_attention=True)
 		return x
 
